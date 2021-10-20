@@ -1,0 +1,15 @@
+name: pcal2md
+version: 0.1.0
+
+authors:
+  - lrutten <lrutten@users.noreply.github.com>
+
+description: |
+  Convert pcal dates to markdown
+
+targets:
+  pcal2md:
+    main: src/pcal2md.cr
+
+license: MIT
+
