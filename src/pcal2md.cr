@@ -2,7 +2,7 @@ require "option_parser"
 require "string_scanner"
 
 module Pcal2md
-   VERSION = "0.9.0"
+   VERSION = "0.9.1"
 
    class Day
       @d : Int32 = 0
@@ -20,6 +20,13 @@ module Pcal2md
       def write_md(ofile : File, month : Month)
           @events.each do |txt|
              ofile.puts "* #{txt}"
+          end
+          ofile.puts ""
+      end
+
+      def write_ics(ofile : File, month : Month)
+          @events.each do |txt|
+             ofile.puts "dag #{txt}"
           end
           ofile.puts ""
       end
@@ -76,80 +83,12 @@ module Pcal2md
       end
 
       def write_md(ofile : File, year : Year)
-         # first day of the month
-         time1 = Time.local(year.y, @m, 1, 10, 20, 30, location: Time::Location.load("Europe/Brussels"))
-         first = 1
-         #ofile.puts "* time1 first #{first} #{time1.to_s}"
-      
-         # last day of the month
-         go = true
-         time2 : Time? = nil
-         last = 31
-         while go
-            begin
-               time2 = Time.local(year.y, @m, last, 10, 20, 30, location: Time::Location.load("Europe/Brussels"))
-            rescue
-               last -= 1
-            end
-            if !time2.nil?
-               go = false
-            end
-         end
-         #ofile.puts "* time2 last #{last} #{time2.not_nil!.to_s}"
+         puts "month"
 
-         
-         # day of week ma=1, di=2, ...
-         dow1 = time1.day_of_week.value
-         dow2 = time2.not_nil!.day_of_week.value
-         #ofile.puts "* dow1 #{dow1} dow2 #{dow2}"
-         
-         # correction for start and end of month
-         first  -= dow1-1
-         last2   = last
-         last2  += 7 - dow2
-         #ofile.puts "* first #{first} last2 #{last2}"
-         #ofile.puts
-         
-         # header of table
-         ofile.puts "| Ma | Di | Wo | Do | Vr | Za | Zo |"
-         ofile.puts "|----|----|----|----|----|----|----|"
-         
-         # build table body
-         it = first
-         wd = 0 # day of week counter
-         s  = "|"
-         while it <= last2
-            if it >= 1 && it <= last
-               s += "#{it} "
-               
-               da = @days[it]?
-               if !da.nil?
-                  da.events.each do |ev|
-                     s += "<br/>#{ev}"
-                  end
-               end
-            else
-               s += "   "
-            end
-            if wd < 6
-               s += "|"
-            end
-            wd += 1
-            if wd >= 7
-               wd = 0
-               ofile.puts s
-               s = "|"
-            end
-            
-            it += 1
+         @days.each_key do |k|
+            day = @days[k]
+            day.write_ics(ofile, self)
          end
-
-         #@days.each_key do |k|
-         #   day = @days[k]
-         #   ofile.puts "#### #{k}"
-         #   day.write_md(ofile, self)
-         #end
-         ofile.puts ""
       end
    end
    
@@ -181,6 +120,15 @@ module Pcal2md
              month.write_md(ofile, self)
           end
       end
+
+      def write_ics(ofile : File)
+          @months.each_key do |k|
+             month = @months[k]
+             puts "month"
+             
+             month.write_md(ofile, self)
+          end
+      end
    end
    
    class Calendar
@@ -189,6 +137,7 @@ module Pcal2md
          @outname  = ""
          @fcontent = ""
          @years    = Hash(Int32, Year).new
+         @ics = false
       end
 
       def get_options
@@ -202,6 +151,10 @@ module Pcal2md
             parser.on "-h", "--help", "Show help" do
                puts parser
                exit
+            end
+            parser.on "-i", "--ics", "Write .ics help" do
+               puts "write ics"
+               @ics = true
             end
             parser.on "-f NAME", "--file=NAME", "file name" do |fname|
                puts "fname #{fname}"
@@ -327,7 +280,7 @@ module Pcal2md
          end
       end
 
-      def write_md(ofile : File)
+      def write_md2(ofile : File)
           @years.each_key do |k|
              #ofile.puts "## #{k}"
              #ofile.puts ""
@@ -337,11 +290,32 @@ module Pcal2md
           end
       end
 
-      def write_file
+      def write_md
          # write md to file
          begin
             File.open(@outname, "w") do |ofile|
-               write_md(ofile)
+               write_md2(ofile)
+               ofile.close
+            end
+         rescue e
+            STDERR.puts "out file not written #{e}"
+            exit(1)
+         end
+      end
+
+      def write_ics2(ofile : File)
+          @years.each_key do |k|
+             puts "year"
+             year = @years[k]
+             year.write_ics(ofile)
+          end
+      end
+
+      def write_ics
+         # write ics to file
+         begin
+            File.open(@outname, "w") do |ofile|
+               write_ics2(ofile)
                ofile.close
             end
          rescue e
@@ -356,7 +330,11 @@ module Pcal2md
          puts "get options ok"
          puts "file name #{@filename}"
          read_file
-         write_file
+         if @ics
+            write_ics
+         else
+            write_md
+         end
       end
    end
    
