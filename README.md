@@ -4,3 +4,9 @@ This tools reads a calendar file in `pcal` format and generates a calendar in Ma
 Each month is formatted as a tabel.
 
 
+## Google Calendar sync settings
+
+~~~~
+https://calendar.google.com/calendar/u/0/syncselect
+~~~~
+
