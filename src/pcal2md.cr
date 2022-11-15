@@ -2,7 +2,7 @@ require "option_parser"
 require "string_scanner"
 
 module Pcal2md
-   VERSION = "0.9.1"
+   VERSION = "0.9.2"
 
    class Event
       @text : String = ""
@@ -417,11 +417,10 @@ module Pcal2md
       end
 
       def write_md2(ofile : File)
-          puts "years"
-          @years.each_key do |k|
+          @years.keys.sort.each do |k|
              #ofile.puts "## #{k}"
              #ofile.puts ""
-             
+             puts "year #{k}"
              year = @years[k]
              year.write_md(ofile)
           end
@@ -468,7 +467,7 @@ module Pcal2md
           ofile.puts "END:VTIMEZONE"
           
           @years.each_key do |k|
-             puts "year"
+             puts "year #{k}"
              year = @years[k]
              year.write_ics(ofile)
           end
